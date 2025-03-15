@@ -5,3 +5,17 @@ body {
   color: black;
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.editor-input {
+  min-height: 300px;
+  max-height: 600px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  padding: 12px;
+  border-radius: 8px;
+  background: white;
+}
+
+.editor-paragraph {
+  margin: 0 0 12px 0;
+}
