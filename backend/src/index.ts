@@ -47,12 +47,26 @@ app.get("/", (req, res) => {
   res.send("API is running...");
 });
 
-// Socket.io
+// ✅ Socket.io Real-time Collaboration
 io.on("connection", (socket) => {
-  console.log("Socket connected:", socket.id);
+  console.log("✅ User connected:", socket.id);
 
+  // Join a note room
+  socket.on("join-note", (noteId: string) => {
+    console.log(`User ${socket.id} joined note: ${noteId}`);
+    socket.join(noteId);
+  });
+
+  // Edit note and broadcast to others
+  socket.on("edit-note", ({ noteId, content }: { noteId: string; content: string }) => {
+    console.log(`User ${socket.id} edited note: ${noteId}`);
+    // Broadcast changes to all other users in the same room
+    socket.to(noteId).emit("receive-changes", content);
+  });
+
+  // Handle disconnect
   socket.on("disconnect", () => {
-    console.log("Socket disconnected:", socket.id);
+    console.log("❌ User disconnected:", socket.id);
   });
 });
 
