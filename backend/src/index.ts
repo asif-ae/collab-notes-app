@@ -6,6 +6,8 @@ import http from "http";
 import { Server } from "socket.io";
 import connectDB from "./config/db";
 import userRoutes from "./routes/userRoutes";
+import authRoutes from "./routes/authRoutes";
+import { errorHandler } from "./middlewares/errorMiddleware";
 
 dotenv.config();
 
@@ -32,7 +34,11 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Routes
+app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+
+// After all routes
+app.use(errorHandler);
 
 // Base Route
 app.get("/", (req, res) => {
