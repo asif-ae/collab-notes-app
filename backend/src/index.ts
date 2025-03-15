@@ -7,6 +7,7 @@ import { Server } from "socket.io";
 import connectDB from "./config/db";
 import userRoutes from "./routes/userRoutes";
 import authRoutes from "./routes/authRoutes";
+import noteRoutes from "./routes/noteRoutes";
 import { errorHandler } from "./middlewares/errorMiddleware";
 
 dotenv.config();
@@ -36,6 +37,7 @@ app.use(cookieParser());
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/notes", noteRoutes);
 
 // After all routes
 app.use(errorHandler);
