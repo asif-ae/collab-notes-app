@@ -1,9 +1,4 @@
-import axios from "axios";
-
-const API = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BASE_API_URL || "http://localhost:5013/api",
-  withCredentials: true, // To send cookies (refreshToken)
-});
+import API from "./axiosInstance";
 
 // Types for requests and responses
 export interface LoginData {
@@ -39,5 +34,11 @@ export const login = async (data: LoginData): Promise<AuthResponse> => {
 // Logout API
 export const logout = async (): Promise<{ message: string }> => {
   const res = await API.post("/auth/logout");
+  return res.data;
+};
+
+// Refresh Token API
+export const refreshToken = async (): Promise<{ message: string }> => {
+  const res = await API.post("/auth/refresh-token");
   return res.data;
 };

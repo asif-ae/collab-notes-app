@@ -1,6 +1,7 @@
-import { AuthProvider } from "@/context/AuthContext";
+import { Providers } from "@/components/Providers";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { cookies } from "next/headers";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,17 +19,25 @@ export const metadata: Metadata = {
   description: "Asif's notes",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get("accessToken")?.value;
+  const refreshToken = cookieStore.get("refreshToken")?.value;
+
+  console.log("Access Token:", accessToken); // Will log on server, not browser
+  console.log("Refresh Token:", refreshToken);
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AuthProvider>{children}</AuthProvider>
+        <Providers accessToken={accessToken} refreshToken={refreshToken}>
+          {children}
+        </Providers>
       </body>
     </html>
   );
