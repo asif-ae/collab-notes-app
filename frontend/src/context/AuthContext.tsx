@@ -39,10 +39,10 @@ export const AuthProvider = ({
         setLoading(false);
       }
 
-      const isProtectedRoute = pathname === "/";
+      // const isProtectedRoute = pathname === "/";
 
       console.log({ pathname });
-      if (!isProtectedRoute && !accessToken && refreshToken) {
+      if (!accessToken && refreshToken) {
         try {
           await refreshTokenFunc().then((data) => {
             console.log({ data });

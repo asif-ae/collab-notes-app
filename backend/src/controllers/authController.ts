@@ -103,3 +103,37 @@ export const logout = async (req: Request, res: Response) => {
   res.clearCookie("refreshToken");
   res.json({ message: "Logged out successfully" });
 };
+
+// Get Current User
+export const getMe = async (req: Request, res: Response) => {
+  const accessToken = req.cookies.accessToken;
+
+  if (!accessToken) {
+    return res.status(401).json({ message: "No access token" });
+  }
+
+  try {
+    // ✅ Verify access token
+    const decoded: any = jwt.verify(
+      accessToken,
+      process.env.ACCESS_TOKEN_SECRET as string
+    );
+
+    // ✅ Find user from database
+    const user = await User.findById(decoded.userId).select("-password -refreshToken");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // ✅ Return user info (excluding sensitive data)
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+    });
+  } catch (error) {
+    console.error("Error verifying access token:", error);
+    return res.status(403).json({ message: "Invalid or expired access token" });
+  }
+};

@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  getMe,
   login,
   logout,
   refresh,
@@ -13,5 +14,6 @@ router.post("/signup", catchAsync(register));
 router.post("/login", catchAsync(login));
 router.post("/refresh-token", catchAsync(refresh));
 router.post("/logout", logout);
+router.get("/me", catchAsync(getMe));
 
 export default router;

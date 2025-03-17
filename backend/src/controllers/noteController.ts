@@ -17,19 +17,36 @@ export const getPublicNoteById = async (req: Request, res: Response) => {
   res.json(note);
 };
 
-// Get all notes (for logged-in user)
+// Get all notes (own + public)
 export const getNotes = async (req: Request, res: Response) => {
   const userId = (req as any).user.userId;
-  const notes = await Note.find({ author: userId });
+
+  const notes = await Note.find({
+    $or: [
+      { author: userId },      // Notes authored by user
+      { public: true },        // Public notes from others
+    ],
+  });
+
   res.json(notes);
 };
 
-// Get note by ID (for logged-in user)
+// Get note by ID (own + public)
 export const getNote = async (req: Request, res: Response) => {
   const userId = (req as any).user.userId;
   const { id } = req.params;
-  const notes = await Note.findOne({ _id: id, author: userId });
-  res.json(notes);
+
+  const note = await Note.findOne({
+    _id: id,
+    $or: [
+      { author: userId },   // If user is the author
+      { public: true },     // OR note is public
+    ],
+  });
+
+  if (!note) return res.status(404).json({ message: "Note not found" });
+
+  res.json(note);
 };
 
 // Create a note
@@ -48,13 +65,25 @@ export const createNote = async (req: Request, res: Response) => {
 export const updateNote = async (req: Request, res: Response) => {
   const userId = (req as any).user.userId;
   const { id } = req.params;
-  const { title, content } = req.body;
+  const { title, content, public: isPublic } = req.body; // ✅ Include public field optionally
+
+  const updateFields: any = { updatedAt: Date.now() };
+
+  if (title !== undefined) updateFields.title = title;
+  if (content !== undefined) updateFields.content = content;
+  if (isPublic !== undefined) updateFields.public = isPublic;
 
   const note = await Note.findOneAndUpdate(
-    { _id: id, author: userId },
-    { title, content, updatedAt: Date.now() },
+    {
+      _id: id,
+      $or: [
+        { author: userId },
+        { public: true },
+      ],
+    },
+    updateFields,
     { new: true }
-  );
+  );  
 
   if (!note) return res.status(404).json({ message: "Note not found" });
 

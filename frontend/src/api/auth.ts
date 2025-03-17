@@ -17,6 +17,12 @@ export interface AuthResponse {
   message: string;
 }
 
+export interface User {
+  _id: string;
+  name: string;
+  email: string;
+}
+
 // Signup API
 export const signup = async (
   data: SignupData
@@ -40,5 +46,11 @@ export const logout = async (): Promise<{ message: string }> => {
 // Refresh Token API
 export const refreshToken = async (): Promise<{ message: string }> => {
   const res = await API.post("/auth/refresh-token");
+  return res.data;
+};
+
+// ME API
+export const me = async (): Promise<User> => {
+  const res = await API.get("/auth/me");
   return res.data;
 };
