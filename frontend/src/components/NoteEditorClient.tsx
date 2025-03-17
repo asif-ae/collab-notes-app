@@ -2,9 +2,7 @@
 
 import { me } from "@/api/auth";
 import { getNote, updateNote } from "@/api/notes";
-import {
-  LexicalEditor
-} from "lexical";
+import { LexicalEditor } from "lexical";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -23,10 +21,20 @@ export default function NoteEditorClient({ noteId }: { noteId: string }) {
   const [content, setContent] = useState<string>("");
   const [socket, setSocket] = useState<Socket | null>(null);
   const [activeUsers, setActiveUsers] = useState<string[]>([]);
+  const [authorUserId, setAuthorUserId] = useState<string>("");
+  const [userId, setUserId] = useState<string>("");
   const [userName, setUserName] = useState<string>("");
   const [isPublic, setIsPublic] = useState<boolean>(false);
 
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null); // For debounce auto-save
+
+  useEffect(() => {
+    (async () => {
+      const user = await me();
+      setUserId(user._id);
+      setUserName(user.name);
+    })();
+  }, []);
 
   // ✅ Fetch note and user
   useEffect(() => {
@@ -36,9 +44,7 @@ export default function NoteEditorClient({ noteId }: { noteId: string }) {
         setTitle(note.title);
         setContent(note.content);
         setIsPublic(note.public);
-
-        const user = await me();
-        setUserName(user.name);
+        setAuthorUserId(note.author);
       } catch {
         router.push("/");
       } finally {
@@ -175,19 +181,27 @@ export default function NoteEditorClient({ noteId }: { noteId: string }) {
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-gray-700 font-medium">
-            {isPublic ? "🔓 Public" : "🔒 Private"}
-          </span>
-          <button
-            onClick={togglePublic}
-            className={`px-4 py-2 rounded ${
-              isPublic ? "bg-green-600" : "bg-gray-600"
-            } text-white`}
-          >
-            Make {isPublic ? "Private" : "Public"}
-          </button>
-        </div>
+        {userId === authorUserId ? (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-700 font-medium">
+              {isPublic ? "🔓 Public" : "🔒 Private"}
+            </span>
+            <button
+              onClick={togglePublic}
+              className={`px-4 py-2 rounded ${
+                isPublic ? "bg-green-600" : "bg-gray-600"
+              } text-white`}
+            >
+              Make {isPublic ? "Private" : "Public"}
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-700 font-medium">
+              {isPublic ? "🔓 Public" : "🔒 Private"}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* 🔥 Real-time Note Title */}
