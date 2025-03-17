@@ -37,3 +37,6 @@ body {
 .font-bold { font-weight: bold; }
 .italic { font-style: italic; }
 
+button {
+  @apply cursor-pointer;
+}

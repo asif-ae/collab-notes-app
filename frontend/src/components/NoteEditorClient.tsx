@@ -72,14 +72,10 @@ export default function NoteEditorClient({ noteId }: { noteId: string }) {
     socketIo.on("receive-changes", ({ content: newContent }) => {
       console.log("📥 Content update received");
       setContent(newContent);
-      // handleContentChange(newContent);
 
       isRemoteUpdate.current = true; // ✅ Scoped to this update
 
       editorRef.current?.update(() => {
-        // const root = $getRoot();
-        // root.clear(); // Clear existing
-        // root.updateFromJSON(newContent);
         const editorState = editorRef.current!.parseEditorState(newContent); // ✅ Parse JSON string to editor state
         editorRef.current!.setEditorState(editorState); // ✅ Set editor state
       });

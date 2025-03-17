@@ -1,10 +1,26 @@
 "use client";
 
-import { createNote, deleteNote, getNotes, Note } from "@/api/notes";
-import Logout from "@/components/Logout";
-import User from "@/components/User";
-import { useEffect, useState } from "react";
+import {
+  createNote,
+  deleteNote,
+  getNotes,
+  Note,
+  updateNote,
+} from "@/api/notes";
+import { default as MainHeader } from "@/components/MainHeader";
+import { Lock, Pencil, Trash2, Unlock } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
+interface LexicalNode {
+  type: string;
+  children?: LexicalNode[];
+  text?: string;
+}
+
+interface LexicalRoot {
+  children?: LexicalNode[];
+}
 
 export default function Home() {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -52,70 +68,108 @@ export default function Home() {
   };
 
   // ✅ Toggle Privacy (Dummy function for now — you can implement the backend logic later)
-  const handleTogglePrivacy = (id: string) => {
-    alert(`Toggle privacy for note: ${id}`);
-    // TODO: Call backend to update privacy and update state
+  const handleTogglePrivacy = async (id: string, isPublic: boolean) => {
+    try {
+      const newStatus = !isPublic;
+      await updateNote(id, { public: newStatus });
+      setNotes((prev) => {
+        const noteIndex = prev.findIndex((note) => note._id === id);
+        if (noteIndex === -1) return prev;
+        const updatedNote = { ...prev[noteIndex], public: newStatus };
+        return [
+          ...prev.slice(0, noteIndex),
+          updatedNote,
+          ...prev.slice(noteIndex + 1),
+        ];
+      });
+      alert(`Note is now ${newStatus ? "Public" : "Private"}`);
+    } catch (error) {
+      console.error("Failed to update privacy:", error);
+      alert("Failed to update privacy status.");
+    }
   };
 
-  if (loading) return <div className="text-center mt-10">Loading your notes...</div>;
+  // ✅ Helper to parse lexical content (simple plain-text approach for now)
+  const getPlainTextFromLexicalJSON = (jsonString: string) => {
+    try {
+      const json = JSON.parse(jsonString);
+      const rootChildren = json.root?.children || [];
+      const plainText = rootChildren
+        .map((node: LexicalRoot) =>
+          node.children?.map((c: LexicalNode) => c.text).join(" ")
+        )
+        .join(" ");
+      return plainText || "No content yet...";
+    } catch (err) {
+      console.error("Failed to parse content", err);
+      return "Invalid content";
+    }
+  };
+
+  if (loading)
+    return <div className="text-center mt-10">Loading your notes...</div>;
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Your Notes</h1>
-        <button
-          onClick={handleCreateNote}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          + Create Note
-        </button>
-      </div>
+    <div className="max-w-6xl mx-auto p-6 space-y-10">
+      <MainHeader onCreateNote={handleCreateNote} />
 
-      {/* Notes List */}
-      <div className="space-y-4">
-        {notes.length === 0 && <p>No notes found. Create a new one!</p>}
+      {/* Notes Grid */}
+      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        {notes.length === 0 && (
+          <div className="col-span-full text-center text-gray-500">
+            You have no notes yet. Click &quot;New Note&quot; to get started!
+          </div>
+        )}
         {notes.map((note) => (
           <div
             key={note._id}
-            className="border rounded p-4 shadow-sm hover:shadow transition"
+            className="border rounded-xl p-5 shadow-sm hover:shadow-lg transition bg-white flex flex-col justify-between h-[200px]"
           >
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="text-xl font-semibold">{note.title}</h3>
-                <p className="text-gray-600">{note.content.slice(0, 100)}...</p>
-              </div>
-              <div className="flex gap-2">
-                {/* Edit Button */}
+            <div>
+              <h3 className="text-xl font-semibold truncate">
+                {note.title || "Untitled Note"}
+              </h3>
+              <p className="text-gray-600 mt-2 text-sm line-clamp-4">
+                {note.content
+                  ? getPlainTextFromLexicalJSON(note.content).slice(0, 500) +
+                    "..."
+                  : "No content yet..."}
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-between items-center mt-4">
+              <button
+                onClick={() => router.push(`/note/${note._id}`)}
+                className="flex items-center gap-1 text-blue-600 hover:underline text-sm"
+              >
+                <Pencil className="w-4 h-4" />
+                Edit
+              </button>
+
+              <div className="flex gap-3">
                 <button
-                  onClick={() => router.push(`/note/${note._id}`)}
-                  className="text-blue-500 hover:underline"
+                  onClick={() => handleTogglePrivacy(note._id, note.public)}
+                  className="text-gray-500 hover:text-gray-700"
+                  title="Toggle Privacy"
                 >
-                  Edit
+                  {note.public ? (
+                    <Unlock className="w-5 h-5" />
+                  ) : (
+                    <Lock className="w-5 h-5" />
+                  )}
                 </button>
-                {/* Delete Button */}
                 <button
                   onClick={() => handleDeleteNote(note._id)}
-                  className="text-red-500 hover:underline"
+                  className="text-red-500 hover:text-red-700"
+                  title="Delete"
                 >
-                  Delete
-                </button>
-                {/* Privacy Toggle Button */}
-                <button
-                  onClick={() => handleTogglePrivacy(note._id)}
-                  className="text-gray-500 hover:underline"
-                >
-                  Toggle Privacy
+                  <Trash2 className="w-5 h-5" />
                 </button>
               </div>
             </div>
           </div>
         ))}
-      </div>
-
-      {/* User Info & Logout */}
-      <div className="mt-10">
-        <User />
-        <Logout />
       </div>
     </div>
   );
