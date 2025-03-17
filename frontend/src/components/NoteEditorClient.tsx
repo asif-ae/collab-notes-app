@@ -3,6 +3,7 @@
 import { me } from "@/api/auth";
 import { getNote, updateNote } from "@/api/notes";
 import { LexicalEditor } from "lexical";
+import { ArrowLeft, Lock, Unlock, Users } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -25,6 +26,7 @@ export default function NoteEditorClient({ noteId }: { noteId: string }) {
   const [userId, setUserId] = useState<string>("");
   const [userName, setUserName] = useState<string>("");
   const [isPublic, setIsPublic] = useState<boolean>(false);
+  const [showAllUsers, setShowAllUsers] = useState(false);
 
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null); // For debounce auto-save
 
@@ -156,60 +158,82 @@ export default function NoteEditorClient({ noteId }: { noteId: string }) {
   if (loading) return <>Loading...</>;
 
   return (
-    <div className="max-w-3xl mx-auto mt-10 p-4">
-      <h1 className="text-3xl font-bold mb-4">Edit Note</h1>
+    <div className="max-w-4xl mx-auto mt-8 p-6">
+      {/* ✅ Merged Header */}
+      <div className="flex justify-between items-center border-b pb-4 mb-6">
+        {/* 🔙 Back Button */}
+        <button
+          onClick={() => router.push("/")}
+          className="flex items-center gap-2 text-gray-600 hover:text-black transition"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span>Home</span>
+        </button>
 
-      {/* 👥 Active Users */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex gap-2">
-          {activeUsers.map((name, idx) => (
-            <div
-              key={idx}
-              className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center"
-              title={name}
-            >
-              {name
-                .split(" ")
-                .map((word) => word[0])
-                .join("")
-                .toUpperCase()}
-            </div>
-          ))}
-        </div>
+        {/* 🔥 Title Input */}
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => handleTitleChange(e.target.value)}
+          placeholder="Note Title"
+          className="w-2/3 border border-gray-300 rounded p-2 text-lg font-semibold text-center"
+        />
 
+        {/* 🔒 Public/Private Toggle */}
         {userId === authorUserId ? (
-          <div className="flex items-center gap-2">
-            <span className="text-gray-700 font-medium">
-              {isPublic ? "🔓 Public" : "🔒 Private"}
-            </span>
-            <button
-              onClick={togglePublic}
-              className={`px-4 py-2 rounded ${
-                isPublic ? "bg-green-600" : "bg-gray-600"
-              } text-white`}
-            >
-              Make {isPublic ? "Private" : "Public"}
-            </button>
-          </div>
+          <button
+            onClick={togglePublic}
+            className={`px-4 py-2 rounded-md flex items-center gap-2 text-white ${
+              isPublic ? "bg-green-600" : "bg-gray-600"
+            }`}
+          >
+            {isPublic ? (
+              <Unlock className="w-4 h-4" />
+            ) : (
+              <Lock className="w-4 h-4" />
+            )}
+            {isPublic ? "Public" : "Private"}
+          </button>
         ) : (
-          <div className="flex items-center gap-2">
-            <span className="text-gray-700 font-medium">
-              {isPublic ? "🔓 Public" : "🔒 Private"}
-            </span>
+          <div>
+            {isPublic ? (
+              <span className="px-4 py-2 rounded-md bg-green-600 text-white">
+                Public
+              </span>
+            ) : (
+              <span
+                className="px-4 py-2 rounded-md bg-gray-600 text-white
+              "
+              >
+                Private
+              </span>
+            )}
           </div>
         )}
       </div>
 
-      {/* 🔥 Real-time Note Title */}
-      <input
-        type="text"
-        value={title}
-        onChange={(e) => handleTitleChange(e.target.value)}
-        placeholder="Note Title"
-        className="w-full border border-gray-300 rounded p-2 mb-4 text-xl font-semibold"
-      />
+      {/* 👥 Active Users */}
+      <div className="flex items-center gap-3 mb-4">
+        {activeUsers.slice(0, 5).map((name, idx) => (
+          <div
+            key={idx}
+            className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm"
+            title={name}
+          >
+            {name[0]?.toUpperCase()}
+          </div>
+        ))}
+        {activeUsers.length > 5 && (
+          <button
+            onClick={() => setShowAllUsers(!showAllUsers)}
+            className="text-gray-600 text-sm flex items-center gap-1"
+          >
+            <Users className="w-5 h-5" /> +{activeUsers.length - 5} more
+          </button>
+        )}
+      </div>
 
-      {/* ✍️ Rich Text Editor */}
+      {/* 📝 Rich Text Editor */}
       <RichTextEditor
         content={content}
         onChange={handleContentChange}
