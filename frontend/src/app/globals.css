@@ -31,3 +31,12 @@ body {
 .btn-secondary {
   @apply bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600;
 }
+
+.underline { text-decoration: underline; }
+.line-through { text-decoration: line-through; }
+.font-bold { font-weight: bold; }
+.italic { font-style: italic; }
+
+button {
+  @apply cursor-pointer;
+}

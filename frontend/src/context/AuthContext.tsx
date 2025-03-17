@@ -1,20 +1,74 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { refreshToken as refreshTokenFunc } from "@/api/auth";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 interface AuthContextType {
-  accessToken: string | null;
-  setAccessToken: (token: string | null) => void;
+  true: boolean;
+  // isAuthenticated: boolean;
+  // setIsAuthenticated: (value: boolean) => void;
+  // loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+export const AuthProvider = ({
+  accessToken,
+  refreshToken,
+  children,
+}: {
+  accessToken: string | undefined;
+  refreshToken: string | undefined;
+  children: ReactNode;
+}) => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const isLoginOrSignup = pathname === "/login" || pathname === "/signup";
+      if (isLoginOrSignup) {
+        setLoading(false);
+      }
+
+      // const isProtectedRoute = pathname === "/";
+
+      console.log({ pathname });
+      if (!accessToken && refreshToken) {
+        try {
+          await refreshTokenFunc().then((data) => {
+            console.log({ data });
+            router.push("/"); // ✅ Force redirect to homepage
+          });
+        } catch (error) {
+          console.error("❌ Refresh failed or no cookies", error);
+          router.push("/login"); // ✅ Force redirect to login
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
+      setLoading(false);
+    })();
+  }, [pathname, accessToken, refreshToken]);
 
   return (
-    <AuthContext.Provider value={{ accessToken, setAccessToken }}>
-      {children}
+    <AuthContext.Provider
+      value={{
+        true: true,
+        // isAuthenticated, setIsAuthenticated, loading
+      }}
+    >
+      {loading ? <div>Loading...</div> : children}
     </AuthContext.Provider>
   );
 };

@@ -47,26 +47,53 @@ app.get("/", (req, res) => {
   res.send("API is running...");
 });
 
-// ✅ Socket.io Real-time Collaboration
-io.on("connection", (socket) => {
-  console.log("✅ User connected:", socket.id);
+// Store active users in rooms
+const noteRooms: Record<string, Record<string, string>> = {};
 
-  // Join a note room
-  socket.on("join-note", (noteId: string) => {
-    console.log(`User ${socket.id} joined note: ${noteId}`);
+io.on("connection", (socket) => {
+  console.log("🟢 User connected:", socket.id);
+
+  // Join note room with user name
+  socket.on("join-note", ({ noteId, userName }) => {
+    console.log(`User ${userName} (${socket.id}) joined note: ${noteId}`);
+
+    if (!noteRooms[noteId]) noteRooms[noteId] = {};
+    noteRooms[noteId][socket.id] = userName;
+
     socket.join(noteId);
+
+    // Notify all users in room about current users
+    io.to(noteId).emit("active-users", Object.values(noteRooms[noteId]));
   });
 
-  // Edit note and broadcast to others
-  socket.on("edit-note", ({ noteId, content }: { noteId: string; content: string }) => {
-    console.log(`User ${socket.id} edited note: ${noteId}`);
-    // Broadcast changes to all other users in the same room
-    socket.to(noteId).emit("receive-changes", content);
+  // Handle note editing and broadcast
+  socket.on("edit-note", ({ noteId, content }) => {
+    socket.to(noteId).emit("receive-changes", { content });
+  });
+
+  // Handle title update and broadcast
+  socket.on("edit-title", ({ noteId, title }) => {
+    console.log(`Title updated in note ${noteId}`);
+    socket.to(noteId).emit("receive-title", { title });
+  });
+
+  // Handle public status update and broadcast
+  socket.on("edit-public-status", ({ noteId, public: isPublic }) => {
+    console.log(`Public status updated in note ${noteId}`);
+    socket.to(noteId).emit("receive-public-status", { public: isPublic });
   });
 
   // Handle disconnect
   socket.on("disconnect", () => {
-    console.log("❌ User disconnected:", socket.id);
+    console.log("🔴 User disconnected:", socket.id);
+    for (const noteId in noteRooms) {
+      if (noteRooms[noteId][socket.id]) {
+        delete noteRooms[noteId][socket.id];
+        io.to(noteId).emit("active-users", Object.values(noteRooms[noteId]));
+        if (Object.keys(noteRooms[noteId]).length === 0)
+          delete noteRooms[noteId]; // clean empty rooms
+      }
+    }
   });
 });
 
